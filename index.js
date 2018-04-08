@@ -1,12 +1,16 @@
 const express               = require('express'),
       expressSanitizer      = require('express-sanitizer'),
+      cookieSession         = require('cookie-session'),
       mongoose              = require('mongoose'),
       bodyParser            = require('body-parser'),
       methodOverride        = require('method-override'),
+      passport              = require('passport'),
       keys                  = require('./config/keys');
 
 // Pull in Schema(s) from model(s)
 require('./models/Blog');
+require('./models/User');
+require('./services/passport');
 
 const app                   = express();
 
@@ -26,10 +30,21 @@ app.use(expressSanitizer());
 app.use(methodOverride("_method"));
 mongoose.connect(keys.mongoURI);
 
+app.use(
+      cookieSession({
+            maxAge: 30 * 24 * 60 * 60 * 1000,
+            keys: [keys.cookieKey]
+      })
+);
+app.use(passport.initialize());
+app.use(passport.session());
 
 app.get('/', (req,res) => {
       res.send('We have a connection!');
 });
+
+require('./routes/authRoutes')(app);
+require('./routes/blogRoutes')(app);
 
 
 if (process.env.NODE_ENV === 'production') {
